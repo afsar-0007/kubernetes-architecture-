@@ -1,0 +1,668 @@
+. What is Kubernetes?
+
+Kubernetes (K8s) is an open-source container orchestration platform used to deploy, manage, scale, network, and maintain containerized applications automatically.
+
+In simple words:
+
+Docker runs containers. Kubernetes manages containers at scale.
+
+For example, Docker can run:
+
+Frontend Container
+Backend Container
+Database Container
+
+But imagine you have:
+
+100 Backend Containers
+50 Frontend Containers
+20 Worker Containers
+10 Database-related services
+
+Managing all of these manually with Docker commands would become extremely difficult.
+
+That's where Kubernetes comes in.
+
+2. Why do we need Kubernetes?
+
+Let's first understand the problem.
+
+Suppose you have a web application:
+
+User
+  ↓
+Frontend
+  ↓
+Backend
+  ↓
+Database
+
+Initially, your application is small.
+
+You might run everything using Docker:
+
+docker run frontend
+docker run backend
+docker run database
+
+This works perfectly fine.
+
+But eventually your application becomes popular.
+
+You now need:
+
+Frontend → 5 containers
+Backend  → 10 containers
+Workers  → 5 containers
+
+Then problems start appearing.
+
+3. Problems Kubernetes solves
+
+Kubernetes solves many problems associated with running large numbers of containers across multiple machines.
+
+The major ones are:
+
+1. Container management
+2. Scaling
+3. Self-healing
+4. Load balancing
+5. Service discovery
+6. Rolling updates
+7. Rollbacks
+8. Resource management
+9. High availability
+10. Configuration and secrets
+11. Storage management
+12. Scheduling containers
+13. Managing multiple machines
+14. Declarative infrastructure
+
+Let's understand each.
+
+4. Problem: Managing many containers
+
+With Docker, you can manually run containers:
+
+docker run backend
+docker run backend
+docker run backend
+
+But imagine 500 containers.
+
+You would have to manually manage:
+
+Which machine runs the container?
+Which container failed?
+Which container should restart?
+Which container should receive traffic?
+Where should a new container be created?
+How should containers communicate?
+
+This becomes difficult.
+
+Kubernetes solves this.
+
+You tell Kubernetes:
+
+"I want 10 copies of my backend application running."
+
+Kubernetes tries to maintain that desired state.
+
+Desired state:
+
+Backend = 10 replicas
+
+Current:
+
+Backend = 8 replicas
+
+Kubernetes:
+
+Create 2 more
+5. Problem: Scaling
+
+Suppose your application normally needs:
+
+3 backend containers
+
+During a sale:
+
+100,000 users
+
+You might need:
+
+20 backend containers
+
+With Docker, you could manually create more containers.
+
+With Kubernetes, you can specify:
+
+replicas: 20
+
+Or use Horizontal Pod Autoscaler (HPA) to automatically increase/decrease replicas based on metrics.
+
+Low traffic
+    ↓
+3 Pods
+
+High traffic
+    ↓
+10 Pods
+
+Very high traffic
+    ↓
+20 Pods
+
+So Kubernetes provides scaling and autoscaling.
+
+6. Problem: Container failure
+
+Imagine you have:
+
+Backend Pod 1
+Backend Pod 2
+Backend Pod 3
+
+Suddenly:
+
+Backend Pod 2 💀
+
+Without orchestration, someone may need to notice the failure and restart it.
+
+Kubernetes continuously monitors the desired state.
+
+It can detect:
+
+Expected: 3 Pods
+Running: 2 Pods
+
+Then Kubernetes creates another one:
+
+Backend Pod 1
+Backend Pod 2
+Backend Pod 3
+
+This is called self-healing.
+
+Kubernetes can:
+
+restart failed containers
+replace failed Pods
+stop unhealthy containers from receiving traffic
+recreate workloads when necessary
+7. Problem: What if an entire server fails?
+
+This is a bigger problem.
+
+Imagine:
+
+Node 1
+ ├── Backend Pod
+ ├── Frontend Pod
+ └── Worker Pod
+
+The entire machine crashes.
+
+Node 1 💀
+
+If Kubernetes has other nodes available:
+
+Node 2
+Node 3
+
+Kubernetes can schedule replacement Pods onto healthy nodes.
+
+Node 1 💀
+
+        ↓
+
+Node 2
+ ├── Backend
+ └── Frontend
+
+Node 3
+ └── Worker
+
+This helps provide high availability.
+
+8. Problem: Load balancing
+
+Suppose you have:
+
+Backend Pod 1
+Backend Pod 2
+Backend Pod 3
+
+Users shouldn't have to know the IP address of every Pod.
+
+Kubernetes provides Services.
+
+Conceptually:
+
+             Users
+                ↓
+          Kubernetes Service
+          /       |       \
+         ↓        ↓        ↓
+       Pod 1    Pod 2    Pod 3
+
+The Service provides a stable way to access the application and can distribute traffic among the Pods.
+
+9. Problem: Pod IP addresses change
+
+This is extremely important.
+
+Pods are ephemeral.
+
+A Pod might have:
+
+Pod 1
+IP: 10.1.0.5
+
+Then it dies.
+
+Kubernetes creates a replacement:
+
+Pod 2
+IP: 10.1.0.27
+
+If another application was connecting directly to:
+
+10.1.0.5
+
+it would break.
+
+Kubernetes solves this using Services and service discovery.
+
+Instead of connecting directly to a Pod:
+
+Backend → 10.1.0.5
+
+you can connect to:
+
+Backend → backend-service
+
+Kubernetes handles finding the appropriate Pods.
+
+10. Problem: Deploying new versions
+
+Suppose your current application is:
+
+Backend v1
+
+You create:
+
+Backend v2
+
+How do you update hundreds of containers without taking the application offline?
+
+Kubernetes supports rolling updates.
+
+For example:
+
+v1 v1 v1 v1
+
+Gradually:
+
+v2 v1 v1 v1
+
+Then:
+
+v2 v2 v1 v1
+
+Then:
+
+v2 v2 v2 v1
+
+Finally:
+
+v2 v2 v2 v2
+
+Users can continue using the application during the deployment.
+
+11. Problem: New version is broken
+
+Suppose:
+
+v1 → working
+v2 → buggy
+
+You deploy v2 and discover something went wrong.
+
+Kubernetes supports rollbacks.
+
+Conceptually:
+
+v1
+ ↓
+v2
+ ↓
+Problem detected
+ ↓
+Rollback
+ ↓
+v1
+
+This makes deployments safer.
+
+12. Problem: Resource management
+
+Imagine your machine has:
+
+CPU: 8 cores
+RAM: 16 GB
+
+You have multiple applications.
+
+You don't want one application consuming everything.
+
+Kubernetes lets you define:
+
+CPU request
+CPU limit
+Memory request
+Memory limit
+
+For example:
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "512Mi"
+
+  limits:
+    cpu: "1"
+    memory: "1Gi"
+
+This tells Kubernetes approximately:
+
+"This application needs this amount of resources and shouldn't exceed this limit."
+
+13. Problem: Which machine should run a container?
+
+Suppose you have:
+
+Node 1 → 4 CPU
+Node 2 → 8 CPU
+Node 3 → 16 CPU
+
+You create a Pod.
+
+Who decides where it should run?
+
+Kubernetes Scheduler.
+
+The scheduler looks at things such as:
+
+available CPU
+available memory
+resource requests
+node constraints
+affinity/anti-affinity
+taints and tolerations
+other scheduling rules
+
+and selects an appropriate node.
+
+Pod
+ ↓
+Scheduler
+ ↓
+Node 3
+ ↓
+Pod runs
+14. Problem: Application configuration
+
+Applications often need configuration such as:
+
+DATABASE_HOST
+DATABASE_PORT
+APP_ENV
+API_URL
+
+Instead of hardcoding these values into container images, Kubernetes provides objects such as:
+
+ConfigMap
+
+For non-sensitive configuration.
+
+ConfigMap
+ ├── DATABASE_HOST
+ ├── DATABASE_PORT
+ └── APP_ENV
+15. Problem: Passwords and sensitive information
+
+Applications also need:
+
+Database password
+API keys
+Tokens
+Credentials
+
+Kubernetes provides Secrets for storing sensitive configuration data.
+
+Conceptually:
+
+Pod
+ ↓
+Secret
+ ↓
+DATABASE_PASSWORD
+
+Secrets still need proper security practices; Kubernetes Secrets aren't automatically equivalent to a fully fledged external secrets-management system.
+
+16. Problem: Storage
+
+Containers are generally ephemeral.
+
+If a container is deleted, data stored only inside its writable container filesystem can disappear.
+
+For applications such as:
+
+Database
+File storage
+Persistent application data
+
+you need persistent storage.
+
+Kubernetes provides abstractions such as:
+
+PersistentVolume (PV)
+PersistentVolumeClaim (PVC)
+StorageClass
+
+Conceptually:
+
+Pod
+ ↓
+PVC
+ ↓
+PV
+ ↓
+Storage
+
+This allows storage to have a lifecycle independent of an individual Pod.
+
+17. Problem: Networking
+
+In a Kubernetes cluster, you can have:
+
+Frontend Pods
+Backend Pods
+Worker Pods
+Database Pods
+
+They need to communicate.
+
+Kubernetes provides a networking model and objects such as:
+
+Services
+ClusterIP
+NodePort
+LoadBalancer
+DNS-based service discovery
+NetworkPolicies
+
+For example:
+
+Frontend
+   ↓
+backend-service
+   ↓
+Backend Pods
+
+The frontend doesn't need to know the individual backend Pod IPs.
+
+18. Problem: High availability
+
+Imagine:
+
+Server 1
+Server 2
+Server 3
+
+Your application can be distributed across multiple nodes.
+
+If one node fails:
+
+Server 1 💀
+
+the remaining infrastructure can continue running workloads.
+
+Kubernetes therefore provides mechanisms that help build highly available applications, although HA ultimately depends on how you configure your workloads, cluster, storage, networking, and underlying infrastructure.
+
+19. Problem: Manual operations
+
+Without Kubernetes, you might repeatedly do:
+
+SSH into server
+↓
+Check container
+↓
+Pull new image
+↓
+Stop old container
+↓
+Start new container
+↓
+Check logs
+↓
+Restart if necessary
+↓
+Repeat on other servers
+
+With Kubernetes, you define what you want:
+
+replicas: 5
+image: myapp:v2
+
+Then Kubernetes works toward that state.
+
+This is called declarative management.
+
+20. Imperative vs Declarative
+
+This is one of the most important Kubernetes concepts.
+
+Imperative
+
+You tell the system how to do something.
+
+For example:
+
+docker run nginx
+
+You're directly instructing Docker to create a container.
+
+Declarative
+
+You tell Kubernetes what you want.
+
+For example:
+
+replicas: 3
+image: nginx
+
+You're saying:
+
+"I want three replicas of nginx."
+
+Kubernetes continuously tries to make reality match your desired state.
+
+Desired State
+      ↓
+Kubernetes
+      ↓
+Actual State
+
+If they differ:
+
+Desired: 3 Pods
+Actual: 2 Pods
+
+Kubernetes → create 1
+21. Kubernetes is not a replacement for Docker
+
+This is an important distinction.
+
+Think of it like this:
+
+Docker
+   ↓
+Containerization
+
+while:
+
+Kubernetes
+   ↓
+Container orchestration
+
+Docker focuses heavily on:
+
+building images
+running containers
+container networking
+container storage
+container lifecycle
+
+Kubernetes focuses on:
+
+deploying workloads
+managing Pods
+scaling
+scheduling
+service discovery
+load balancing
+self-healing
+rolling updates
+cluster management
+
+Also, modern Kubernetes does not require Docker Engine as its container runtime. Kubernetes typically uses a CRI-compatible runtime such as containerd or CRI-O.
+
+22. Kubernetes Architecture in simple terms
+
+A Kubernetes cluster generally consists of:
+
+                 Kubernetes Cluster
+                         │
+              ┌──────────┴──────────┐
+              │                     │
+       Control Plane             Worker Nodes
+              │                     │
+      ┌───────┼───────┐       ┌─────┴─────┐
+      │       │       │       │           │
+   API     Scheduler  etcd   Kubelet    Kubelet
+   Server                    Pods        Pods
+Control Plane
+
+The control plane makes decisions and manages the cluster.
+
+Important components include:
+
+API Server
+etcd
+Scheduler
+Controller Manager
+Worker Node
+
