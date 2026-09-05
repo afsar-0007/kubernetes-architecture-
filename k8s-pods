@@ -1,0 +1,20 @@
+pent some time learning about Kubernetes Pods and how they work inside a Kubernetes cluster.
+
+Covered the basics of what a Pod is and why it is considered the smallest deployable unit in Kubernetes. Also learned how multiple containers can run inside the same Pod, share the network and storage, and work together — for example, one container running the main application while another works as a sidecar container.
+
+Some of the topics I covered:
+
+🔹 What is a Pod and why Kubernetes uses Pods
+🔹 Single-container and multi-container Pods
+🔹 How containers inside a Pod share networking and storage
+🔹 Pod IP address and networking basics
+🔹 Pod lifecycle and different Pod states
+🔹 Creating a Pod using a YAML manifest
+🔹 Understanding Pod YAML specifications like apiVersion, kind, metadata, spec, containers, name, and image
+🔹 Creating and managing Pods using kubectl
+🔹 Useful commands like get pods, describe pod, logs, edit, and delete
+
+Also got a better understanding of what actually happens when a Pod is created — from defining its configuration in YAML to Kubernetes scheduling it on a Worker Node and running its container.
+
+
+![pods-k8s](k8s-pods.png)
