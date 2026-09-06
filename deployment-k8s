@@ -1,0 +1,25 @@
+☸️ Kubernetes Deployments
+
+Kubernetes Deployments — understanding how Kubernetes manages application availability, scaling, updates, and health.
+
+Today I explored the complete relationship between Deployments, ReplicaSets, Pods, and Containers, and how these components work together to maintain the desired state of an application.
+
+Key concepts covered:
+
+🔹 Deployment architecture and YAML configuration
+🔹 spec, replicas, selector, and template
+🔹 ReplicaSets and their role in maintaining Pod replicas
+🔹 Kubernetes self-healing by automatically replacing failed/deleted Pods
+🔹 Scaling Deployments up and down
+🔹 Rolling Updates and deployment strategies
+🔹 Rollout management using kubectl rollout
+🔹 Pausing and resuming rollouts
+🔹 maxUnavailable and maxSurge
+🔹 Readiness and Liveness Probes for application health
+🔹 Monitoring and managing Deployments and ReplicaSets using kubectl
+
+One of the most useful parts was seeing these concepts in action — especially how Kubernetes automatically maintains the desired number of Pods and performs rolling updates without bringing the entire application down.
+
+Another step forward in understanding how Kubernetes manages applications reliably in a production environment. 🚀
+
+#Kubernetes #K8s #DevOps #CloudComputing #Docker #KubernetesDeployment #LearningJourney #DevOpsJourney
