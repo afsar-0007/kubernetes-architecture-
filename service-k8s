@@ -28,3 +28,21 @@ Another step forward in understanding Kubernetes networking and how different co
 
 
 ![service-k8s](service-k8s.png)
+
+
+
+Kubernetes service syntax ::
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  selector:
+    app.kubernetes.io/name: MyApp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9376
+
+
