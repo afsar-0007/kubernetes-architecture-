@@ -1,0 +1,30 @@
+☸️ Kubernetes Services
+
+Spent some time understanding Kubernetes Services and why they are needed even when we already have Deployments managing our Pods.
+
+One of the main things I understood is that Pod IPs are not permanent — when Pods are recreated, their IP addresses can change. A Service provides a stable way to access a group of Pods and keeps communication working even when Pods change.
+
+Key concepts covered:
+
+🔹 Why we need Services with Deployments
+🔹 How changing Pod IPs create a need for a stable endpoint
+🔹 Labels & Selectors and how they help identify and connect Pods with Services
+🔹 Service discovery and how applications find other services inside a cluster
+🔹 Different Service types:
+   ClusterIP
+   NodePort
+   LoadBalancer
+   ExternalName
+🔹 How Services provide load balancing across Pods
+🔹 How Services provide service discovery
+🔹 How applications can be exposed internally or externally
+🔹 Understanding the Service YAML configuration and its important fields
+
+The most interesting part was understanding how Deployment manages the Pods, while Service provides a stable way to reach those Pods.
+
+Another step forward in understanding Kubernetes networking and how different components communicate with each other. 🚀☸️
+
+#Kubernetes #K8s #DevOps #Docker #CloudComputing #KubernetesServices #LearningJourney #DevOpsJourney
+
+
+![service-k8s](service-k8s.png)
