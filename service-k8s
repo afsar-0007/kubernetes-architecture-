@@ -27,10 +27,6 @@ Another step forward in understanding Kubernetes networking and how different co
 #Kubernetes #K8s #DevOps #Docker #CloudComputing #KubernetesServices #LearningJourney #DevOpsJourney
 
 
-![service-k8s](service-k8s.png)
-
-
-
 Kubernetes service syntax ::
 
 apiVersion: v1
@@ -46,3 +42,30 @@ spec:
       targetPort: 9376
 
 
+
+Kubernetes Deployment Syntax ::
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+
+
+![service-k8s](service-k8s.png)
