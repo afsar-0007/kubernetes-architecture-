@@ -1,0 +1,27 @@
+Today I spent some time learning about **Kubernetes Ingress** and understanding why it is important when running applications in a production environment.
+
+• Learned the problem of exposing multiple Kubernetes Services externally using separate **LoadBalancer Services**, which can become costly and difficult to manage as the number of applications grows.
+
+• Understood how **Ingress provides a centralized entry point** for HTTP/HTTPS traffic and allows multiple applications to be accessed through a common external endpoint.
+
+• Learned how Ingress can intelligently route incoming requests to the correct Kubernetes Service based on **hostnames and URL paths**.
+
+• Understood **path-based routing**, for example:
+`/` → Frontend Service
+`/api` → Backend Service
+`/admin` → Admin Service
+
+• Also learned **host-based routing**, where different domains or subdomains can route traffic to different Services.
+
+• Clearly understood the difference between an **Ingress Resource** and an **Ingress Controller** — the Ingress defines the routing rules, while the Ingress Controller actually implements those rules and handles the incoming traffic.
+
+• Learned that Ingress does not directly replace Kubernetes Services. The typical flow is:
+**User → External LoadBalancer/Entry Point → Ingress Controller → Service → Pod**
+
+• Explored how Ingress can also handle **HTTPS/TLS**, making it possible to manage secure application access through a centralized routing layer.
+
+• Most importantly, I understood why Ingress is useful for building a more **scalable, organized, and manageable architecture** when multiple applications need to be exposed from a Kubernetes cluster.
+
+Continuing to build my Kubernetes knowledge step by step and getting closer to understanding how production-grade Kubernetes environments are designed. 🚀☸️
+
+#Kubernetes #DevOps #Ingress #KubernetesIngress #CloudComputing #LearningInPublic
