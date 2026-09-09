@@ -1,0 +1,38 @@
+Kubernetes Namespace
+
+Today I also learned about Namespaces in Kubernetes and how they help organize and separate resources within a Kubernetes cluster.
+
+What I learned
+A Namespace provides a logical boundary for Kubernetes resources.
+It helps separate environments such as development, staging, and production.
+Resources like Pods, Deployments, Services, ConfigMaps, and Secrets can be created inside a namespace.
+Namespaces also help with RBAC, resource quotas, and access control.
+A namespace does not automatically provide complete network isolation.
+Example
+Kubernetes Cluster
+│
+├── dev
+│   ├── Pods
+│   ├── Services
+│   └── Deployments
+│
+├── staging
+│   ├── Pods
+│   └── Services
+│
+└── production
+    ├── Pods
+    ├── Services
+    └── Deployments
+Useful Commands
+kubectl create namespace dev
+
+kubectl get namespaces
+
+kubectl get pods -n dev
+
+kubectl get services -n dev
+
+Key takeaway:
+
+Namespace → logically organizes and separates Kubernetes resources within a cluster.
