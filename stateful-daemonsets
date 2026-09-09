@@ -1,0 +1,28 @@
+Kubernetes StatefulSet & DaemonSet
+
+Today I learned about StatefulSet and DaemonSet in Kubernetes and when they are used for different types of workloads.
+
+StatefulSet
+Used for stateful applications that need stable identity, storage, or ordering.
+Commonly used for databases, Kafka, and other stateful workloads.
+Pods get stable names such as:
+mysql-0, mysql-1, mysql-2
+Pods can have persistent storage associated with them.
+If a Pod is recreated, Kubernetes can maintain its identity.
+StatefulSet
+    ↓
+mysql-0 → Storage
+mysql-1 → Storage
+mysql-2 → Storage
+DaemonSet
+Ensures that one Pod runs on every eligible Node in the cluster.
+If a new Node joins, the DaemonSet automatically creates a Pod on it.
+Commonly used for logging agents, monitoring agents, security agents, and networking components.
+Node 1 → Agent Pod
+Node 2 → Agent Pod
+Node 3 → Agent Pod
+Node 4 → Agent Pod
+Key Difference
+Deployment  → Fixed number of replicas
+StatefulSet → Stable identity + persistent state
+DaemonSet   → One Pod per eligible Node
