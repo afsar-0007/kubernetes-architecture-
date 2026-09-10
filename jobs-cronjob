@@ -1,0 +1,139 @@
+🚀 Kubernetes Jobs & CronJobs
+
+Today I learned about Jobs and CronJobs in Kubernetes, which are used for running tasks that need to complete successfully rather than running continuously like a Deployment.
+
+🔹 Job
+
+A Job is used to perform a task and ensure that it completes successfully.
+
+Examples:
+
+Database migration
+Data processing
+Backup
+One-time scripts
+
+A Job can define the command that needs to be executed inside the container.
+
+Important fields I learned:
+
+command → Defines the task/command to execute.
+restartPolicy → Can be Never or OnFailure.
+completions → Number of successful completions required.
+parallelism → Number of Pods that can run simultaneously.
+backoffLimit → Controls retries after failures.
+Job YAML
+apiVersion: batch/v1
+kind: Job
+
+metadata:
+  name: my-job
+
+spec:
+  completions: 3
+  parallelism: 2
+  backoffLimit: 3
+
+  template:
+    spec:
+      containers:
+        - name: worker
+          image: busybox
+          command:
+            - sh
+            - -c
+            - echo "Task completed successfully"
+
+      restartPolicy: Never
+Job
+ ↓
+Pod
+ ↓
+Execute command
+ ↓
+Task completed
+ ↓
+Job Complete ✅
+🕐 CronJob
+
+A CronJob is used to run tasks automatically according to a schedule.
+
+It is useful for:
+
+Scheduled backups
+Database cleanup
+Reports
+Periodic data processing
+Automated maintenance tasks
+
+The flow is:
+
+CronJob
+   ↓
+Creates Job
+   ↓
+Creates Pod
+   ↓
+Runs Task
+   ↓
+Completes
+CronJob YAML
+apiVersion: batch/v1
+kind: CronJob
+
+metadata:
+  name: my-cronjob
+
+spec:
+  schedule: "*/5 * * * *"
+
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: worker
+              image: busybox
+              command:
+                - sh
+                - -c
+                - echo "Running scheduled task"
+
+          restartPolicy: Never
+⏰ Cron Schedule
+* * * * *
+│ │ │ │ │
+│ │ │ │ └── Day of week
+│ │ │ └──── Month
+│ │ └────── Day of month
+│ └──────── Hour
+└────────── Minute
+
+For example:
+
+*/5 * * * *
+
+means:
+
+Run every 5 minutes.
+
+Some common examples:
+
+* * * * *       → Every minute
+*/5 * * * *     → Every 5 minutes
+0 * * * *       → Every hour
+0 0 * * *       → Every day at midnight
+0 2 * * *       → Every day at 2 AM
+🎯 Key Difference
+Job
+→ Run a task and complete it
+
+CronJob
+→ Schedule a task
+→ Creates a Job
+→ Job creates a Pod
+→ Task completes
+
+Key takeaway:
+
+Job is used for running tasks to completion, while CronJob is used to run those tasks automatically on a defined schedule.
