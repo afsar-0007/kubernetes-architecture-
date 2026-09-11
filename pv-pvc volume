@@ -1207,3 +1207,86 @@ Actual Storage
 > 🧠 **PVC = "I need storage"**
 > 🧠 **PV = "I provide storage"**
 > 🧠 **Pod = "I use the storage"**
+
+
+
+1. pv.yaml
+apiVersion: v1
+kind: PersistentVolume
+
+metadata:
+  name: my-pv
+
+spec:
+  capacity:
+    storage: 10Gi
+
+  accessModes:
+    - ReadWriteOnce
+
+  persistentVolumeReclaimPolicy: Retain
+
+  storageClassName: ""
+
+  hostPath:
+    path: /mnt/data
+2. pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: my-pvc
+
+spec:
+  accessModes:
+    - ReadWriteOnce
+
+  storageClassName: ""
+
+  resources:
+    requests:
+      storage: 5Gi
+3. pod.yaml
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: my-pod
+
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+
+      volumeMounts:
+        - name: my-storage
+          mountPath: /usr/share/nginx/html
+
+  volumes:
+    - name: my-storage
+      persistentVolumeClaim:
+        claimName: my-pvc
+Apply them
+kubectl apply -f pv.yaml
+kubectl apply -f pvc.yaml
+kubectl apply -f pod.yaml
+Check
+kubectl get pv
+kubectl get pvc
+kubectl get pods
+
+You should get:
+
+PV  → Bound
+PVC → Bound
+Pod → Running
+
+The important connection is:
+
+my-pod
+   ↓
+my-pvc
+   ↓
+my-pv
+   ↓
+/mnt/data
