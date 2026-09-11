@@ -1,0 +1,1209 @@
+# Kubernetes Persistent Volumes (PV) and Persistent Volume Claims (PVC)
+
+## 1. Why do we need Persistent Storage?
+
+Containers are generally **ephemeral**.
+
+If a container is deleted or recreated, the data inside its container filesystem can be lost.
+
+For example:
+
+```text
+Pod
+ └── Container
+      └── /app/data
+           ├── file1.txt
+           └── file2.txt
+```
+
+If the Pod/container is deleted, this data may disappear.
+
+Kubernetes provides persistent storage using:
+
+```text
+Storage
+   ↓
+PersistentVolume (PV)
+   ↓
+PersistentVolumeClaim (PVC)
+   ↓
+Pod
+```
+
+---
+
+# 2. What is a PersistentVolume (PV)?
+
+A **PersistentVolume (PV)** is a piece of storage available in the Kubernetes cluster.
+
+Think of a PV as:
+
+> "Here is 10 GiB of storage that Kubernetes can use."
+
+A PV is a **cluster-level resource**.
+
+It is not tied to a particular Pod.
+
+Example:
+
+```text
+PV
+Capacity: 10Gi
+Access Mode: ReadWriteOnce
+```
+
+The actual storage can come from different places, such as:
+
+* AWS EBS
+* Azure Disk
+* Google Persistent Disk
+* NFS
+* Local storage
+* CSI storage systems
+
+---
+
+# 3. What is a PersistentVolumeClaim (PVC)?
+
+A **PersistentVolumeClaim (PVC)** is a request for storage.
+
+Think of it as:
+
+> "I need 5 GiB of storage with ReadWriteOnce access."
+
+The Pod normally does **not** directly request a PV.
+
+Instead:
+
+```text
+Pod
+ ↓
+PVC
+ ↓
+PV
+ ↓
+Actual Storage
+```
+
+The PVC acts as an abstraction between the application and the storage.
+
+---
+
+# 4. PV vs PVC
+
+| PV                                                  | PVC                                 |
+| --------------------------------------------------- | ----------------------------------- |
+| Actual storage resource                             | Request for storage                 |
+| Created by administrator or dynamically provisioned | Usually created by application/user |
+| Cluster-scoped                                      | Namespace-scoped                    |
+| Provides storage                                    | Requests storage                    |
+| Example: 10Gi                                       | Example: request 5Gi                |
+| Bound to a PVC                                      | Bound to a PV                       |
+
+Easy way to remember:
+
+```text
+PV  = "I HAVE storage"
+PVC = "I NEED storage"
+```
+
+---
+
+# 5. Basic Architecture
+
+```text
+                 Kubernetes Cluster
+                         │
+                         ▼
+                       PVC
+                "I need 5Gi storage"
+                         │
+                         ▼
+                        PV
+                 "I have 10Gi storage"
+                         │
+                         ▼
+                 Actual Storage
+```
+
+Then the Pod uses the PVC:
+
+```text
+Pod
+ │
+ └── PVC
+      │
+      └── PV
+           │
+           └── Actual Storage
+```
+
+---
+
+# 6. PersistentVolume YAML
+
+Example:
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+
+metadata:
+  name: my-pv
+
+spec:
+  capacity:
+    storage: 10Gi
+
+  accessModes:
+    - ReadWriteOnce
+
+  persistentVolumeReclaimPolicy: Retain
+
+  hostPath:
+    path: /mnt/data
+```
+
+Let's understand every important part.
+
+---
+
+## capacity
+
+```yaml
+capacity:
+  storage: 10Gi
+```
+
+This defines how much storage the PV provides.
+
+Here:
+
+```text
+PV capacity = 10Gi
+```
+
+Common units:
+
+```text
+Mi = Mebibyte
+Gi = Gibibyte
+Ti = Tebibyte
+```
+
+For example:
+
+```yaml
+storage: 5Gi
+```
+
+means approximately 5 GiB of storage.
+
+---
+
+# 7. Access Modes
+
+Access modes define **how the storage can be mounted/accessed**.
+
+### ReadWriteOnce (RWO)
+
+```yaml
+accessModes:
+  - ReadWriteOnce
+```
+
+The volume can be mounted as read-write by a single node.
+
+Think:
+
+```text
+Node 1
+  │
+  └── Read + Write
+```
+
+---
+
+### ReadOnlyMany (ROX)
+
+```yaml
+accessModes:
+  - ReadOnlyMany
+```
+
+The volume can be mounted as read-only by multiple nodes.
+
+```text
+Node 1 ── Read
+Node 2 ── Read
+Node 3 ── Read
+```
+
+---
+
+### ReadWriteMany (RWX)
+
+```yaml
+accessModes:
+  - ReadWriteMany
+```
+
+Multiple nodes can mount the volume and read/write to it.
+
+```text
+Node 1 ── Read + Write
+Node 2 ── Read + Write
+Node 3 ── Read + Write
+```
+
+Important:
+
+> Not every storage backend supports every access mode.
+
+---
+
+# 8. persistentVolumeReclaimPolicy
+
+Example:
+
+```yaml
+persistentVolumeReclaimPolicy: Retain
+```
+
+This controls what happens to the PV's storage when its PVC is deleted.
+
+Common policies:
+
+```text
+Retain
+Delete
+```
+
+### Retain
+
+```yaml
+persistentVolumeReclaimPolicy: Retain
+```
+
+The PV/storage is retained after the PVC is deleted.
+
+Useful when you don't want to accidentally lose data.
+
+---
+
+### Delete
+
+```yaml
+persistentVolumeReclaimPolicy: Delete
+```
+
+When the PVC is deleted, Kubernetes can delete the associated storage resource as supported by the storage provisioner.
+
+---
+
+# 9. hostPath
+
+Our example uses:
+
+```yaml
+hostPath:
+  path: /mnt/data
+```
+
+This uses a directory on the Kubernetes node.
+
+For example:
+
+```text
+Node
+└── /mnt/data
+      ├── file1
+      └── file2
+```
+
+This is useful mainly for **learning/testing**.
+
+In production clusters, storage is commonly provided through a CSI driver/cloud storage rather than `hostPath`.
+
+---
+
+# 10. PersistentVolumeClaim YAML
+
+Example:
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: my-pvc
+
+spec:
+  accessModes:
+    - ReadWriteOnce
+
+  resources:
+    requests:
+      storage: 5Gi
+```
+
+The important part is:
+
+```yaml
+resources:
+  requests:
+    storage: 5Gi
+```
+
+This means:
+
+> "I need at least 5Gi of storage."
+
+---
+
+# 11. How does PVC automatically bind to PV?
+
+This is one of the most important concepts.
+
+Suppose we have:
+
+### PV
+
+```yaml
+capacity:
+  storage: 10Gi
+
+accessModes:
+  - ReadWriteOnce
+```
+
+### PVC
+
+```yaml
+resources:
+  requests:
+    storage: 5Gi
+
+accessModes:
+  - ReadWriteOnce
+```
+
+Kubernetes looks for a suitable PV.
+
+The PVC asks:
+
+```text
+I need:
+5Gi
+RWO
+```
+
+The PV provides:
+
+```text
+I provide:
+10Gi
+RWO
+```
+
+The requirements are compatible.
+
+Therefore:
+
+```text
+PVC ────────────► PV
+      BOUND
+```
+
+---
+
+# 12. Important Point About Storage Size
+
+A common misconception is:
+
+> "PV must have exactly the same size as PVC."
+
+Not necessarily.
+
+For example:
+
+```text
+PV = 10Gi
+PVC = 5Gi
+```
+
+The PVC can bind to the PV because the PV has **at least** the requested capacity, assuming the other matching requirements are satisfied.
+
+So:
+
+```text
+PVC requests 5Gi
+PV provides 10Gi
+
+10Gi >= 5Gi
+       ✓
+```
+
+But:
+
+```text
+PVC requests 10Gi
+PV provides 5Gi
+
+5Gi < 10Gi
+     ✗
+```
+
+The PVC cannot bind to that PV.
+
+---
+
+# 13. Other Requirements for Binding
+
+Storage capacity is not the only consideration.
+
+Kubernetes considers things such as:
+
+### 1. Capacity
+
+```text
+PVC: 5Gi
+PV: 10Gi
+
+✓
+```
+
+### 2. Access Modes
+
+```text
+PVC: RWO
+PV: RWO
+
+✓
+```
+
+If the PVC requires an access mode the PV doesn't support, they won't match.
+
+### 3. StorageClass
+
+StorageClass can also affect which PV can satisfy the claim.
+
+For static provisioning, you can explicitly use:
+
+```yaml
+storageClassName: ""
+```
+
+when appropriate to indicate no StorageClass.
+
+For dynamic provisioning, a PVC normally specifies or receives a StorageClass, which Kubernetes uses to provision storage automatically.
+
+### 4. Volume compatibility
+
+The storage backend and other volume attributes must be compatible.
+
+So conceptually:
+
+```text
+PVC requirements
+      │
+      ▼
+Kubernetes looks for suitable PV
+      │
+      ├── Capacity ✓
+      ├── Access Mode ✓
+      ├── StorageClass ✓
+      └── Other requirements ✓
+              │
+              ▼
+             BOUND
+```
+
+---
+
+# 14. Complete Example
+
+## pv.yaml
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+
+metadata:
+  name: my-pv
+
+spec:
+  capacity:
+    storage: 10Gi
+
+  accessModes:
+    - ReadWriteOnce
+
+  persistentVolumeReclaimPolicy: Retain
+
+  storageClassName: ""
+
+  hostPath:
+    path: /mnt/data
+```
+
+---
+
+## pvc.yaml
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: my-pvc
+
+spec:
+  accessModes:
+    - ReadWriteOnce
+
+  storageClassName: ""
+
+  resources:
+    requests:
+      storage: 5Gi
+```
+
+Now Kubernetes can find:
+
+```text
+my-pv
+10Gi
+RWO
+No StorageClass
+```
+
+and:
+
+```text
+my-pvc
+requests 5Gi
+RWO
+No StorageClass
+```
+
+So:
+
+```text
+my-pvc
+   │
+   ▼
+my-pv
+
+STATUS = Bound
+```
+
+---
+
+# 15. Checking PV and PVC
+
+After applying:
+
+```bash
+kubectl apply -f pv.yaml
+kubectl apply -f pvc.yaml
+```
+
+Check PV:
+
+```bash
+kubectl get pv
+```
+
+Check PVC:
+
+```bash
+kubectl get pvc
+```
+
+You should see something similar to:
+
+```text
+NAME      CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS
+my-pv     10Gi       RWO            Retain            Bound
+```
+
+And:
+
+```text
+NAME      STATUS   VOLUME   CAPACITY   ACCESS MODES
+my-pvc    Bound    my-pv    10Gi       RWO
+```
+
+Notice something interesting:
+
+```text
+PVC requested = 5Gi
+PV capacity   = 10Gi
+```
+
+The claim is still bound to the 10Gi PV.
+
+---
+
+# 16. Using PVC inside a Pod
+
+The Pod references the **PVC**, not the PV directly.
+
+Example:
+
+```yaml
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: my-pod
+
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+
+      volumeMounts:
+        - name: my-storage
+          mountPath: /usr/share/nginx/html
+
+  volumes:
+    - name: my-storage
+      persistentVolumeClaim:
+        claimName: my-pvc
+```
+
+The complete relationship is:
+
+```text
+Pod
+ │
+ │ uses
+ ▼
+PVC
+ │
+ │ bound to
+ ▼
+PV
+ │
+ │ backed by
+ ▼
+Storage
+```
+
+---
+
+# 17. What happens when Pod is deleted?
+
+Suppose:
+
+```text
+Pod → PVC → PV → Storage
+```
+
+If the Pod is deleted:
+
+```text
+Pod ❌
+```
+
+the PVC and PV normally remain.
+
+Therefore, the persistent data can remain available when a new Pod uses the same PVC.
+
+That's the main purpose of persistent storage.
+
+---
+
+# 18. PVC Lifecycle / Status
+
+A PVC can have different statuses.
+
+The important ones are:
+
+```text
+Pending
+Bound
+Lost
+```
+
+---
+
+## Pending
+
+Example:
+
+```text
+PVC
+STATUS: Pending
+```
+
+This means:
+
+> Kubernetes has not found/provisioned a suitable PV for the claim yet.
+
+For example:
+
+```text
+PVC requests: 20Gi
+```
+
+but available PVs are:
+
+```text
+PV 1 = 5Gi
+PV 2 = 10Gi
+```
+
+There is no suitable 20Gi PV.
+
+Therefore:
+
+```text
+PVC → Pending
+```
+
+---
+
+## Bound
+
+```text
+PVC → Bound → PV
+```
+
+This means the PVC has successfully been associated with a PV.
+
+Example:
+
+```text
+PVC = 5Gi
+PV  = 10Gi
+
+STATUS = Bound
+```
+
+---
+
+## Lost
+
+`Lost` means Kubernetes has lost the connection/association with the PV backing the claim or the expected volume is no longer available.
+
+It is an abnormal/problem state and generally requires investigation.
+
+Conceptually:
+
+```text
+PVC
+ │
+ └── PV/storage problem
+          ↓
+        Lost
+```
+
+---
+
+# 19. PV Lifecycle
+
+PV has its own lifecycle.
+
+The common phases are:
+
+```text
+Available
+Bound
+Released
+Failed
+```
+
+### Available
+
+PV exists and is not currently bound to a PVC.
+
+```text
+PV
+ ↓
+Available
+```
+
+---
+
+### Bound
+
+PV is bound to a PVC.
+
+```text
+PV
+ │
+ └── PVC
+      ↓
+    Bound
+```
+
+---
+
+### Released
+
+The PVC that was bound to the PV has been deleted.
+
+For example:
+
+```text
+PV ←→ PVC
+```
+
+PVC gets deleted:
+
+```text
+PV
+ ↓
+Released
+```
+
+What happens next depends on the reclaim policy and storage type.
+
+---
+
+### Failed
+
+The PV has encountered a problem during reclamation or another operation.
+
+---
+
+# 20. Complete Lifecycle
+
+A simplified PV lifecycle looks like:
+
+```text
+             ┌─────────────┐
+             │  Available  │
+             └──────┬──────┘
+                    │
+                    │ PVC matches
+                    ▼
+             ┌─────────────┐
+             │    Bound    │
+             └──────┬──────┘
+                    │
+                    │ PVC deleted
+                    ▼
+             ┌─────────────┐
+             │   Released  │
+             └──────┬──────┘
+                    │
+          ┌─────────┴─────────┐
+          │                   │
+       Retain               Delete
+          │                   │
+          ▼                   ▼
+     Data retained       Storage deleted
+```
+
+---
+
+# 21. Static Provisioning
+
+In static provisioning, an administrator creates the PV manually.
+
+```text
+Admin
+  │
+  ▼
+Creates PV
+  │
+  ▼
+PVC created
+  │
+  ▼
+Kubernetes binds PVC → PV
+```
+
+Example:
+
+```text
+PV = 10Gi
+PVC = 5Gi
+```
+
+---
+
+# 22. Dynamic Provisioning
+
+In dynamic provisioning, you don't have to manually create a PV for every PVC.
+
+You create a:
+
+```text
+StorageClass
+```
+
+Then:
+
+```text
+PVC
+ ↓
+StorageClass
+ ↓
+Provisioner
+ ↓
+New PV
+ ↓
+Actual Storage
+```
+
+For example, in a cloud environment:
+
+```text
+PVC requests 20Gi
+       ↓
+StorageClass
+       ↓
+CSI provisioner
+       ↓
+Cloud disk created
+       ↓
+PV created
+       ↓
+PVC bound
+```
+
+This is very common in production Kubernetes environments.
+
+---
+
+# 23. The Most Important Difference
+
+Remember these three:
+
+### Volume
+
+A volume is how storage is exposed/mounted into a Pod.
+
+```text
+Pod → Volume
+```
+
+### PersistentVolume
+
+A cluster-level storage resource.
+
+```text
+PV = Storage available
+```
+
+### PersistentVolumeClaim
+
+A request for persistent storage.
+
+```text
+PVC = Storage requested
+```
+
+So:
+
+```text
+Volume
+   ↓
+Used by Pod
+
+PVC
+   ↓
+Requests persistent storage
+
+PV
+   ↓
+Provides persistent storage
+```
+
+---
+
+# 24. Final Mental Model
+
+The easiest way to remember the entire concept:
+
+```text
+              USER / APPLICATION
+                     │
+                     │ "I need 5Gi"
+                     ▼
+                    PVC
+          "PersistentVolumeClaim"
+                     │
+                     │ Kubernetes finds
+                     │ suitable storage
+                     ▼
+                    PV
+          "PersistentVolume"
+                     │
+                     │ backed by
+                     ▼
+              Actual Storage
+```
+
+And the Pod:
+
+```text
+                 POD
+                  │
+                  │ uses
+                  ▼
+                 PVC
+                  │
+                  ▼
+                 PV
+                  │
+                  ▼
+              STORAGE
+```
+
+### One-line memory trick
+
+> **PVC asks, PV provides, Pod uses.**
+
+And for automatic binding:
+
+> **If a suitable PV satisfies the PVC's requirements, Kubernetes binds them automatically.**
+
+---
+
+# 25. Files for GitHub
+
+A clean repository structure could be:
+
+```text
+kubernetes-storage/
+│
+├── pv.yaml
+├── pvc.yaml
+├── pod.yaml
+└── README.md
+```
+
+### pv.yaml
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+
+metadata:
+  name: my-pv
+
+spec:
+  capacity:
+    storage: 10Gi
+
+  accessModes:
+    - ReadWriteOnce
+
+  persistentVolumeReclaimPolicy: Retain
+
+  storageClassName: ""
+
+  hostPath:
+    path: /mnt/data
+```
+
+### pvc.yaml
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: my-pvc
+
+spec:
+  accessModes:
+    - ReadWriteOnce
+
+  storageClassName: ""
+
+  resources:
+    requests:
+      storage: 5Gi
+```
+
+### pod.yaml
+
+```yaml
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: my-pod
+
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+
+      volumeMounts:
+        - name: my-storage
+          mountPath: /usr/share/nginx/html
+
+  volumes:
+    - name: my-storage
+      persistentVolumeClaim:
+        claimName: my-pvc
+```
+
+---
+
+# Quick Revision
+
+```text
+PV  → Provides storage
+PVC → Requests storage
+Pod → Uses PVC
+```
+
+```text
+PV capacity:
+10Gi
+
+PVC request:
+5Gi
+
+10Gi >= 5Gi
+     ↓
+Requirements match
+     ↓
+PVC ↔ PV
+     ↓
+Bound
+```
+
+PVC statuses:
+
+```text
+Pending → Waiting for suitable storage
+Bound   → Successfully connected to a PV
+Lost    → Backing PV/storage relationship has been lost
+```
+
+PV phases:
+
+```text
+Available → Free
+Bound     → Being used by PVC
+Released  → PVC deleted
+Failed    → Problem occurred
+```
+
+Most important relationship:
+
+```text
+Pod
+ ↓
+PVC
+ ↓
+PV
+ ↓
+Actual Storage
+```
+
+**Remember:**
+
+> 🧠 **PVC = "I need storage"**
+> 🧠 **PV = "I provide storage"**
+> 🧠 **Pod = "I use the storage"**
