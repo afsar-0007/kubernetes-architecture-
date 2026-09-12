@@ -1,0 +1,128 @@
+ubernetes Taints and Tolerations
+What are Taints?
+
+A Taint is applied to a Node to prevent Pods from being scheduled on that node unless the Pod has a matching Toleration.
+
+In simple words:
+
+Taint = Node says "Don't schedule Pods here unless you are allowed."
+
+Example
+kubectl taint nodes node1 environment=production:NoSchedule
+
+This means:
+
+node1
+  │
+  └── environment=production:NoSchedule
+            │
+            ▼
+     Normal Pods ❌
+     Tolerated Pods ✅
+Tolerations
+
+A Toleration is defined inside a Pod's YAML and allows the Pod to be scheduled onto a node with a matching taint.
+
+Example:
+
+tolerations:
+  - key: "environment"
+    operator: "Equal"
+    value: "production"
+    effect: "NoSchedule"
+
+Now the Pod can tolerate:
+
+environment=production:NoSchedule
+Important
+
+Toleration does NOT force a Pod onto that node.
+
+It only means:
+
+"This Pod is allowed to run on this tainted node."
+
+The Kubernetes scheduler can still choose another suitable node.
+
+Taint Effects
+
+There are 3 taint effects:
+
+1. NoSchedule
+
+New Pods that don't tolerate the taint will not be scheduled.
+
+kubectl taint nodes node1 environment=production:NoSchedule
+Non-tolerated Pod → ❌
+Tolerated Pod     → ✅
+2. PreferNoSchedule
+
+Kubernetes tries to avoid scheduling non-tolerated Pods on the node, but it is not a strict restriction.
+
+kubectl taint nodes node1 environment=production:PreferNoSchedule
+
+Think:
+
+"Please avoid this node if possible."
+
+3. NoExecute
+
+This affects both new and already-running Pods.
+
+kubectl taint nodes node1 environment=production:NoExecute
+
+A Pod without the required toleration may be evicted from the node.
+
+New non-tolerated Pod
+        ↓
+      ❌
+
+Existing non-tolerated Pod
+        ↓
+    Evicted ❌
+Complete Example
+Add taint to Node
+kubectl taint nodes node1 environment=production:NoSchedule
+Pod with toleration
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: production-pod
+
+spec:
+  tolerations:
+    - key: "environment"
+      operator: "Equal"
+      value: "production"
+      effect: "NoSchedule"
+
+  containers:
+    - name: nginx
+      image: nginx:latest
+
+Now the Pod can be scheduled on the tainted node.
+
+Taint vs Toleration
+Taint	Toleration
+Applied to Node	Defined in Pod
+Repels Pods	Allows Pod to tolerate the taint
+Controls scheduling	Gives permission to schedule
+Example: environment=prod:NoSchedule	Pod contains matching toleration
+Easy way to remember 🧠
+TAINT
+Node: "Stay away! 🚫"
+
+        ↓
+
+TOLERATION
+Pod: "I am allowed here. ✅"
+
+        ↓
+
+SCHEDULER
+Pod can be scheduled on the node.
+
+One-line interview answer:
+
+Taints are applied to nodes to repel Pods, while tolerations are applied to Pods to allow them to be scheduled on tainted nodes.
